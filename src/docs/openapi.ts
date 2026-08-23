@@ -12,6 +12,10 @@ export const openapiDocument = {
     {
       url: "http://localhost:3000",
       description: "Local development server"
+    },
+    {
+      url: "https://taskflow-backend-api-7iwy.onrender.com",
+      description: "Production server"
     }
   ],
 
