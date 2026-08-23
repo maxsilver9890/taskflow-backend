@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Workflow status used by tasks across the application.
+enum TaskStatus {
+  TODO       @map("todo")
+  IN_PROGRESS @map("in_progress")
+  REVIEW     @map("review")
+  DONE       @map("done")
+
+  @@map("status")
+}
+
+/// Priority level used to sort and escalate work.
+enum TaskPriority {
+  LOW    @map("low")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
+  URGENT @map("urgent")
+
+  @@map("priority")
+}
+
+/// Organization membership role used for later multi-tenant permissions.
+enum OrgMemberRole {
+  ORG_ADMIN @map("org_admin")
+  MEMBER    @map("member")
+
+  @@map("org_member_role")
+}
+
+model User {
+  id              String           @id @default(uuid()) @db.Uuid
+  email           String           @unique
+  name            String
+  passwordHash    String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orgMemberships  OrgMember[]
+  taskAssignments TaskAssignment[]
+  authoredComments Comment[]       @relation("CommentAuthor")
+  refreshTokens   RefreshToken[]
+
+  @@map("users")
+}
+
+/// Persisted refresh tokens — hashed before storage, revocable individually or in bulk.
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  /// SHA-256 hash of the raw token sent to the client. Never store plaintext.
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// Supports listing / revoking all tokens for a user (logout-all-devices).
+  @@index([userId])
+  /// Supports a background cleanup job that prunes expired tokens.
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Organization {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  members     OrgMember[]
+  projects    Project[]
+
+  @@map("organizations")
+}
+
+model OrgMember {
+  organizationId String        @db.Uuid
+  userId         String        @db.Uuid
+  role           OrgMemberRole
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([organizationId, userId])
+  /// Supports listing members for a tenant-scoped organization.
+  @@index([organizationId])
+  /// Supports locating every organization a user belongs to.
+  @@index([userId])
+  @@map("org_members")
+}
+
+model Project {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  tasks          Task[]
+
+  /// Supports organization-scoped project lookups.
+  @@index([organizationId])
+  @@map("projects")
+}
+
+model Task {
+  id          String           @id @default(uuid()) @db.Uuid
+  projectId   String           @db.Uuid
+  title       String
+  description String?
+  status      TaskStatus
+  priority    TaskPriority
+  dueDate     DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assignments TaskAssignment[]
+  comments    Comment[]
+
+  /// Supports fetching tasks within a project.
+  @@index([projectId])
+  /// Supports board and backlog filtering by project and status.
+  @@index([projectId, status])
+  /// Supports priority-based triage within project views.
+  @@index([projectId, priority])
+  /// Supports due-date dashboards and overdue task queries.
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  taskId     String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([taskId, userId])
+  /// Supports fetching assignees for a task detail view.
+  @@index([taskId])
+  /// Supports locating work assigned to a user.
+  @@index([userId])
+  @@map("task_assignments")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId     String   @db.Uuid
+  authorId   String   @db.Uuid
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  author     User     @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// Supports loading a task's discussion thread efficiently.
+  @@index([taskId])
+  @@map("comments")
+}
