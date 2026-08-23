@@ -1,16 +1,16 @@
 # TaskFlow Backend
 
-Multi-tenant task and project management API built with **Node.js**, **TypeScript**, **Express**, **PostgreSQL**, **Prisma**, **Redis**, and **BullMQ**.
+Multi-tenant task and project management API built with **Node.js**, **TypeScript**, **Express**, **PostgreSQL**, **Prisma**, **Redis/Valkey**, and **BullMQ**.
 
 ## Project Status
 
-| Assignment Task                                  |   Status   |
-| ------------------------------------------------ | :---------: |
-| Task 01 — Data Modeling & Database Design       | ✅ Complete |
-| Task 02 — Authentication & Authorization        | ✅ Complete |
-| Task 03 — REST API: Projects & Tasks            | ✅ Complete |
+| Assignment Task | Status |
+|---|:---:|
+| Task 01 — Data Modeling & Database Design | ✅ Complete |
+| Task 02 — Authentication & Authorization | ✅ Complete |
+| Task 03 — REST API: Projects & Tasks | ✅ Complete |
 | Task 04 — Background Jobs & Email Notifications | ✅ Complete |
-| Task 05 — Testing & API Documentation           | ✅ Complete |
+| Task 05 — Testing & API Documentation | ✅ Complete |
 
 ---
 
@@ -21,7 +21,7 @@ Multi-tenant task and project management API built with **Node.js**, **TypeScrip
 - **Express 5**
 - **PostgreSQL 17**
 - **Prisma ORM**
-- **Redis 8**
+- **Redis / Valkey**
 - **BullMQ**
 - **Zod**
 - **JWT**
@@ -68,11 +68,11 @@ Multi-tenant task and project management API built with **Node.js**, **TypeScrip
                        └─────────────────────┘
 ```
 
-The API and worker run as separate processes/services. Task assignment persists the assignment first and then enqueues the notification job.
+The API and Worker are separate processes. Task assignment persists the assignment first and then enqueues the notification job.
 
 ---
 
-# 1. Task 01 — Data Modeling & Database Design
+# Task 01 — Data Modeling & Database Design
 
 ## Implemented
 
@@ -91,8 +91,6 @@ The API and worker run as separate processes/services. Task assignment persists 
 - Deterministic seed data
 
 ## Seed Dataset
-
-The development seed contains:
 
 ```text
 5 users
@@ -114,7 +112,7 @@ Passwords are hashed with bcrypt using cost factor `12`.
 
 ---
 
-# 2. Task 02 — Authentication & Authorization
+# Task 02 — Authentication & Authorization
 
 ## Endpoints
 
@@ -138,7 +136,7 @@ POST /auth/logout
 
 - bcrypt password hashing
 - bcrypt cost factor >= 12
-- plaintext passwords are never stored
+- Plaintext passwords are never stored
 
 ## Refresh Tokens
 
@@ -164,34 +162,34 @@ The client does not supply the organization ID or initial role.
 
 ---
 
-# 3. Task 03 — REST API: Projects & Tasks
+# Task 03 — REST API: Projects & Tasks
 
 ## Project Endpoints
 
-| Method     | Endpoint                    | Purpose           |
-| ---------- | --------------------------- | ----------------- |
-| `POST`   | `/projects`               | Create project    |
-| `GET`    | `/projects`               | List projects     |
-| `GET`    | `/projects/:id`           | Get project       |
-| `PATCH`  | `/projects/:id`           | Update project    |
-| `DELETE` | `/projects/:id`           | Delete project    |
-| `GET`    | `/projects/:id/dashboard` | Project dashboard |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/projects` | Create project |
+| `GET` | `/projects` | List projects |
+| `GET` | `/projects/:id` | Get project |
+| `PATCH` | `/projects/:id` | Update project |
+| `DELETE` | `/projects/:id` | Delete project |
+| `GET` | `/projects/:id/dashboard` | Project dashboard |
 
 ## Task Endpoints
 
-| Method     | Endpoint       | Purpose           |
-| ---------- | -------------- | ----------------- |
-| `POST`   | `/tasks`     | Create task       |
-| `GET`    | `/tasks`     | List/filter tasks |
-| `GET`    | `/tasks/:id` | Get task          |
-| `PATCH`  | `/tasks/:id` | Update task       |
-| `DELETE` | `/tasks/:id` | Delete task       |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/tasks` | Create task |
+| `GET` | `/tasks` | List/filter tasks |
+| `GET` | `/tasks/:id` | Get task |
+| `PATCH` | `/tasks/:id` | Update task |
+| `DELETE` | `/tasks/:id` | Delete task |
 
 ## Assignment Endpoints
 
-| Method     | Endpoint                      | Purpose       |
-| ---------- | ----------------------------- | ------------- |
-| `POST`   | `/tasks/:id/assign`         | Assign user   |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/tasks/:id/assign` | Assign user |
 | `DELETE` | `/tasks/:id/assign/:userId` | Unassign user |
 
 ## Task Filters
@@ -243,7 +241,7 @@ DONE
 
 ---
 
-# 4. Task 04 — Background Jobs & Email Notifications
+# Task 04 — Background Jobs & Email Notifications
 
 ## Assignment Notification Flow
 
@@ -267,7 +265,7 @@ POST /tasks/:id/assign
 ## Queue & Worker
 
 - Redis-backed BullMQ queue
-- Dedicated worker process
+- Dedicated Worker process
 - Asynchronous email processing
 - Console email provider for local development
 
@@ -317,11 +315,11 @@ Job status is organization-scoped. Cross-tenant job access returns `403 Forbidde
 
 ---
 
-# 5. Task 05 — Testing & API Documentation
+# Task 05 — Testing & API Documentation
 
 ## Unit Tests
 
-Implemented coverage for:
+Coverage includes:
 
 - Authentication logic
 - Assignment validation
@@ -329,7 +327,7 @@ Implemented coverage for:
 
 ## Integration Tests
 
-Implemented coverage for:
+Coverage includes:
 
 - Registration
 - Login
@@ -388,19 +386,13 @@ npm run build
 
 # API Documentation
 
-## Swagger UI
+## Public Swagger UI
 
-Once the API is running:
+https://taskflow-backend-api-7iwy.onrender.com/api-docs
 
-```text
-http://localhost:3000/api-docs
-```
+## Public OpenAPI JSON
 
-## OpenAPI JSON
-
-```text
-http://localhost:3000/api-docs/openapi.json
-```
+https://taskflow-backend-api-7iwy.onrender.com/api-docs/openapi.json
 
 The OpenAPI documentation covers:
 
@@ -412,6 +404,13 @@ The OpenAPI documentation covers:
 - Request schemas
 - Response schemas
 - Common error responses
+
+For local development:
+
+```text
+http://localhost:3000/api-docs
+http://localhost:3000/api-docs/openapi.json
+```
 
 ---
 
@@ -549,7 +548,7 @@ Health check:
 http://localhost:3000/health
 ```
 
-## 8. Start the worker
+## 8. Start the Worker
 
 In a second terminal:
 
@@ -599,13 +598,13 @@ It contains placeholders only.
 
 ## Host vs Docker Database URL
 
-When running Prisma/API directly from Windows:
+When running Prisma or the API directly from Windows:
 
 ```text
 postgresql://taskflow:change_me@localhost:5433/taskflow
 ```
 
-When the API/worker run inside Docker:
+When the API/Worker run inside Docker:
 
 ```text
 postgresql://taskflow:change_me@postgres:5432/taskflow
@@ -646,13 +645,101 @@ docker compose down
 
 ## Local Ports
 
-| Service    |     Port |
-| ---------- | -------: |
-| API        | `3000` |
+| Service | Port |
+|---|---:|
+| API | `3000` |
 | PostgreSQL | `5433` |
-| Redis      | `6379` |
+| Redis | `6379` |
 
-The API and worker wait for healthy PostgreSQL and Redis services before starting.
+The API and Worker wait for healthy PostgreSQL and Redis services before starting.
+
+---
+
+# Deployment
+
+## Public API
+
+The API is deployed as a Render Web Service:
+
+**https://taskflow-backend-api-7iwy.onrender.com**
+
+Health check:
+
+**https://taskflow-backend-api-7iwy.onrender.com/health**
+
+## Public API Documentation
+
+Swagger UI:
+
+**https://taskflow-backend-api-7iwy.onrender.com/api-docs**
+
+OpenAPI JSON:
+
+**https://taskflow-backend-api-7iwy.onrender.com/api-docs/openapi.json**
+
+## Render Infrastructure
+
+The current public deployment uses:
+
+```text
+Render Web Service
+Render PostgreSQL
+Render Key Value (Valkey / Redis-compatible)
+```
+
+The API, PostgreSQL, and Key Value services are deployed in the same Render region and communicate through the Render private network.
+
+## Worker Deployment
+
+The BullMQ Worker is implemented as a separate process and is included in the repository and Docker Compose configuration.
+
+The Worker is **not deployed as a Render Background Worker** for this assignment because that service requires a paid instance.
+
+The complete Worker architecture is reproducible locally with Docker Compose:
+
+```text
+API
+  |
+  v
+Redis / BullMQ
+  |
+  v
+Worker
+  |
+  v
+Email Provider
+```
+
+Run the complete local stack with:
+
+```bash
+docker compose up -d --build
+```
+
+Or run the Worker directly during development:
+
+```bash
+npm run worker:dev
+```
+
+Task 04 queue processing, retries, dead-letter queue behavior, job status, and cross-tenant job protection were verified locally with the API and Worker running against PostgreSQL and Redis.
+
+## Deployment Scope
+
+The public Render deployment is intended for API access and demonstration.
+
+The repository remains the source of truth for the complete application architecture, including:
+
+- API
+- Worker
+- PostgreSQL
+- Redis / BullMQ
+- Authentication
+- Projects and Tasks
+- Background jobs
+- Testing
+- Swagger/OpenAPI
+- Postman collection
 
 ---
 
@@ -680,6 +767,7 @@ taskflow-backend/
 ├── docker-compose.yml
 ├── prisma.config.ts
 ├── package.json
+├── package-lock.json
 ├── tsconfig.json
 ├── vitest.config.ts
 ├── .env.example
@@ -689,9 +777,31 @@ taskflow-backend/
 
 ---
 
+# Development Credentials
+
+Seeded development users use:
+
+```text
+Password: TaskFlowDemo123!
+```
+
+Examples:
+
+```text
+ava.shah@northstar.example
+liam.chen@northstar.example
+maya.rao@northstar.example
+noah.kim@blueorbit.example
+sara.ali@blueorbit.example
+```
+
+These credentials are for local development/testing only.
+
+---
+
 # Final Verification
 
-Run the following before submission:
+Run:
 
 ```bash
 npx prisma generate
@@ -719,28 +829,6 @@ Only the safe environment template should be committed:
 
 ---
 
-# Development Credentials
-
-Seeded development users use:
-
-```text
-Password: TaskFlowDemo123!
-```
-
-Examples:
-
-```text
-ava.shah@northstar.example
-liam.chen@northstar.example
-maya.rao@northstar.example
-noah.kim@blueorbit.example
-sara.ali@blueorbit.example
-```
-
-These credentials are for local development/testing only.
-
----
-
 # Git
 
 Primary branch:
@@ -749,4 +837,8 @@ Primary branch:
 main
 ```
 
-The repository includes the completed TaskFlow backend implementation, automated tests, OpenAPI documentation, and Postman collection.
+Repository:
+
+https://github.com/maxsilver9890/taskflow-backend
+
+The repository contains the completed TaskFlow backend implementation, automated tests, OpenAPI documentation, Postman collection, Docker configuration, and reproducible Worker architecture.
