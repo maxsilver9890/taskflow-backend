@@ -4,13 +4,13 @@ Multi-tenant task and project management API built with **Node.js**, **TypeScrip
 
 ## Project Status
 
-| Assignment Task | Status |
-|---|:---:|
-| Task 01 — Data Modeling & Database Design | ✅ Complete |
-| Task 02 — Authentication & Authorization | ✅ Complete |
-| Task 03 — REST API: Projects & Tasks | ✅ Complete |
+| Assignment Task                                  |   Status   |
+| ------------------------------------------------ | :---------: |
+| Task 01 — Data Modeling & Database Design       | ✅ Complete |
+| Task 02 — Authentication & Authorization        | ✅ Complete |
+| Task 03 — REST API: Projects & Tasks            | ✅ Complete |
 | Task 04 — Background Jobs & Email Notifications | ✅ Complete |
-| Task 05 — Testing & API Documentation | ✅ Complete |
+| Task 05 — Testing & API Documentation           | ✅ Complete |
 
 ---
 
@@ -166,30 +166,30 @@ The client does not supply the organization ID or initial role.
 
 ## Project Endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/projects` | Create project |
-| `GET` | `/projects` | List projects |
-| `GET` | `/projects/:id` | Get project |
-| `PATCH` | `/projects/:id` | Update project |
-| `DELETE` | `/projects/:id` | Delete project |
-| `GET` | `/projects/:id/dashboard` | Project dashboard |
+| Method     | Endpoint                    | Purpose           |
+| ---------- | --------------------------- | ----------------- |
+| `POST`   | `/projects`               | Create project    |
+| `GET`    | `/projects`               | List projects     |
+| `GET`    | `/projects/:id`           | Get project       |
+| `PATCH`  | `/projects/:id`           | Update project    |
+| `DELETE` | `/projects/:id`           | Delete project    |
+| `GET`    | `/projects/:id/dashboard` | Project dashboard |
 
 ## Task Endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/tasks` | Create task |
-| `GET` | `/tasks` | List/filter tasks |
-| `GET` | `/tasks/:id` | Get task |
-| `PATCH` | `/tasks/:id` | Update task |
-| `DELETE` | `/tasks/:id` | Delete task |
+| Method     | Endpoint       | Purpose           |
+| ---------- | -------------- | ----------------- |
+| `POST`   | `/tasks`     | Create task       |
+| `GET`    | `/tasks`     | List/filter tasks |
+| `GET`    | `/tasks/:id` | Get task          |
+| `PATCH`  | `/tasks/:id` | Update task       |
+| `DELETE` | `/tasks/:id` | Delete task       |
 
 ## Assignment Endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/tasks/:id/assign` | Assign user |
+| Method     | Endpoint                      | Purpose       |
+| ---------- | ----------------------------- | ------------- |
+| `POST`   | `/tasks/:id/assign`         | Assign user   |
 | `DELETE` | `/tasks/:id/assign/:userId` | Unassign user |
 
 ## Task Filters
@@ -645,11 +645,11 @@ docker compose down
 
 ## Local Ports
 
-| Service | Port |
-|---|---:|
-| API | `3000` |
+| Service    |     Port |
+| ---------- | -------: |
+| API        | `3000` |
 | PostgreSQL | `5433` |
-| Redis | `6379` |
+| Redis      | `6379` |
 
 The API and Worker wait for healthy PostgreSQL and Redis services before starting.
 
