@@ -28,33 +28,6 @@ export default function MarketingPage() {
 
     const cleanups: Array<() => void> = [];
 
-    // ── word split ─────────────────────────────────────────────
-    function splitHeadline(headline: Element) {
-      const src = headline.querySelector("[data-text]");
-      if (!src) return;
-      let i = 0;
-      const frag = document.createDocumentFragment();
-      function wrapWord(text: string | null, accent: boolean) {
-        if (!text) return;
-        const span = document.createElement("span");
-        span.className = "word" + (accent ? " word--accent" : "");
-        span.style.setProperty("--i", String(i++));
-        span.textContent = text;
-        frag.appendChild(span);
-        frag.appendChild(document.createTextNode(" "));
-      }
-      src.childNodes.forEach((node) => {
-        if (node.nodeType === 3) {
-          (node.textContent ?? "").split(/\s+/).filter(Boolean).forEach((w) => wrapWord(w, false));
-        } else if (node.nodeType === 1 && (node as Element).tagName === "EM") {
-          wrapWord((node as Element).textContent, true);
-        }
-      });
-      src.innerHTML = "";
-      src.appendChild(frag);
-    }
-    root.querySelectorAll(".split").forEach(splitHeadline);
-
     // ── reveal observer ──────────────────────────────────────────
     const io = new IntersectionObserver(
       (entries) => {
@@ -268,10 +241,29 @@ export default function MarketingPage() {
               Task &amp; project management
             </p>
             <h1 className="hero__headline split" id="heroHeadline">
-              <span data-text>
-                Assign the work. Let the system handle the <em>rest.</em>
+              {['Assign', 'the', 'work.', 'Let', 'the', 'system', 'handle', 'the'].map((word, index) => (
+                <span className="word" style={{ "--i": index } as React.CSSProperties} key={word + index}>
+                  {word}{" "}
+                </span>
+              ))}
+              <span className="word word--accent" style={{ "--i": 8 } as React.CSSProperties}>
+                rest.
               </span>
             </h1>
+            <div className="hero__signal" data-rev style={{ "--d": "80ms" } as React.CSSProperties}>
+              <div className="hero__signal-head mono">
+                <span>Workspace snapshot</span>
+                <span className="hero__signal-status">Ready</span>
+              </div>
+              <div className="hero__signal-row">
+                <span>Today&apos;s focus</span>
+                <strong>4 tasks assigned</strong>
+              </div>
+              <div className="hero__signal-row">
+                <span>Team pulse</span>
+                <strong>Everyone has a next step</strong>
+              </div>
+            </div>
             <div className="hero__foot mono">
               <span data-rev style={{ "--d": "120ms" } as React.CSSProperties}>
                 Projects &amp; tasks in one place

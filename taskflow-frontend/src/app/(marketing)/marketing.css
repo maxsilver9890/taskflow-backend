@@ -85,6 +85,18 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);}
   font-size:clamp(30px, 5.8vw, 80px);
 }
 .marketing .hero__headline em {font-style:italic; font-weight:300; color:var(--coral-soft);}
+.marketing .hero__signal {
+  width:min(460px,100%); margin-top:32px; padding:15px 18px;
+  border:1px solid rgba(240,229,212,.2); border-left:2px solid var(--coral-soft);
+  background:rgba(7,20,31,.34); backdrop-filter:blur(8px);
+}
+.marketing .hero__signal-head, .marketing .hero__signal-row {
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+}
+.marketing .hero__signal-head {padding-bottom:11px; color:var(--muted-dark); font-size:10px; letter-spacing:.14em; text-transform:uppercase;}
+.marketing .hero__signal-status {color:var(--coral-soft);}
+.marketing .hero__signal-row {padding-top:10px; border-top:1px solid rgba(240,229,212,.12); color:var(--muted-dark); font-size:12px;}
+.marketing .hero__signal-row strong {font-weight:500; color:var(--sand); text-align:right;}
 .marketing .hero__foot {display:flex; gap:32px; margin-top:44px; flex-wrap:wrap;}
 .marketing .hero__foot span {color:var(--muted-dark);}
 
