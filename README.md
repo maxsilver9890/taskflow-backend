@@ -1,215 +1,237 @@
-# TaskFlow Backend
+# TaskFlow
 
-Multi-tenant task and project management API built with **Node.js**, **TypeScript**, **Express**, **PostgreSQL**, **Prisma**, **Redis/Valkey**, and **BullMQ**.
+TaskFlow is a multi-tenant task and project management application. The workspace contains an Express/TypeScript backend and a Next.js frontend.
 
 ## Project Status
 
-| Assignment Task                                  |   Status   |
-| ------------------------------------------------ | :---------: |
-| Task 01 — Data Modeling & Database Design       | ✅ Complete |
-| Task 02 — Authentication & Authorization        | ✅ Complete |
-| Task 03 — REST API: Projects & Tasks            | ✅ Complete |
-| Task 04 — Background Jobs & Email Notifications | ✅ Complete |
-| Task 05 — Testing & API Documentation           | ✅ Complete |
+| Area | Status | Notes |
+| --- | --- | --- |
+| Data modeling and database design | Complete | PostgreSQL, Prisma migrations, relationships, indexes, and seed data |
+| Authentication and authorization | Complete | JWT access tokens, refresh-token rotation, roles, rate limiting, and tenant scoping |
+| Projects and tasks API | Complete | CRUD, filters, pagination, assignments, dashboards, and validation |
+| Background jobs and notifications | Complete | BullMQ, Redis, worker process, retries, email provider, and DLQ |
+| Testing and API documentation | Complete | Unit/integration tests, OpenAPI, Swagger UI, and Postman collection |
 
----
+## Technology Stack
 
-## Tech Stack
-
-- **Node.js 22+**
-- **TypeScript**
-- **Express 5**
-- **PostgreSQL 17**
-- **Prisma ORM**
-- **Redis / Valkey**
-- **BullMQ**
-- **Zod**
-- **JWT**
-- **bcrypt**
-- **Vitest**
-- **Supertest**
-- **Swagger UI / OpenAPI**
-- **Docker / Docker Compose**
-
----
+| Layer | Technology |
+| --- | --- |
+| Backend | Node.js, TypeScript, Express 5 |
+| Frontend | Next.js, React, TypeScript |
+| Database | PostgreSQL, Prisma ORM |
+| Jobs | Redis, BullMQ |
+| Validation and security | Zod, JWT, bcrypt, Helmet, CORS, rate limiting |
+| Testing and tooling | Vitest, Supertest, ESLint, Docker Compose |
 
 ## Architecture
 
 ```text
-                          ┌──────────────────┐
-                          │      Client      │
-                          │  Postman / HTTP  │
-                          └────────┬─────────┘
-                                   │
-                                   ▼
-                        ┌─────────────────────┐
-                        │    Express API      │
-                        │                     │
-                        │ Auth / Projects     │
-                        │ Tasks / Jobs        │
-                        │ Validation / RBAC   │
-                        └──────┬────────┬─────┘
-                               │        │
-                               │        ▼
-                               │   ┌──────────────┐
-                               │   │ Redis/BullMQ │
-                               │   └──────┬───────┘
-                               │          │
-                               │          ▼
-                               │   ┌──────────────┐
-                               │   │    Worker    │
-                               │   │ Email jobs   │
-                               │   └──────────────┘
-                               │
-                               ▼
-                       ┌─────────────────────┐
-                       │     PostgreSQL      │
-                       │       Prisma        │
-                       └─────────────────────┘
+Browser
+   |
+   v
+Next.js frontend
+   |
+   v
+Express API
+   |
+   +--> Authentication and authorization
+   +--> Projects and tasks
+   +--> Job status
+   +--> Prisma ------------------> PostgreSQL
+   |
+   +--> BullMQ ------------------> Redis
+                                      |
+                                      v
+                                Background worker
+                                      |
+                                      v
+                                Email provider
 ```
 
-The API and Worker are separate processes. Task assignment persists the assignment first and then enqueues the notification job.
-
----
-
-# Task 01 — Data Modeling & Database Design
-
-## Implemented
-
-- Users
-- Organizations
-- Organization memberships
-- Projects
-- Tasks
-- Task assignments
-- Comments
-- Refresh tokens
-- PostgreSQL enums
-- Foreign-key relationships
-- Indexes
-- Prisma migrations
-- Deterministic seed data
-
-## Seed Dataset
+### Repository Layout
 
 ```text
-5 users
-2 organizations
-5 organization memberships
-4 projects
-12 tasks
-12 task assignments
-6 comments
+taskflow/
+|-- taskflow-backend/
+|   |-- prisma/                 Database schema, migrations, and seed
+|   |-- src/
+|   |   |-- auth/               Authentication routes and services
+|   |   |-- docs/               OpenAPI document and Swagger UI
+|   |   |-- jobs/               Queues, processors, and job status API
+|   |   |-- projects/           Project routes and services
+|   |   |-- tasks/              Task routes, services, and assignments
+|   |   |-- worker/             Background worker entry point
+|   |-- tests/                  Unit and integration tests
+|   |-- docker-compose.yml      API, worker, PostgreSQL, and Redis
+|-- taskflow-frontend/
+|   |-- src/app/                Next.js routes and layouts
+|   |-- src/components/         Shared UI and feature components
+|   |-- src/hooks/              Data-fetching hooks
+|   |-- src/lib/                API clients and frontend utilities
 ```
 
-Seeded development users use:
+## Prerequisites
+
+- Node.js 22 or newer
+- Docker Desktop with Docker Compose
+- npm
+
+## Local Setup
+
+Run backend commands from `taskflow-backend/`.
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Create `taskflow-backend/.env` with values for the local services. At minimum:
+
+```env
+POSTGRES_DB=taskflow
+POSTGRES_USER=taskflow
+POSTGRES_PASSWORD=change_me
+DATABASE_URL=postgresql://taskflow:change_me@localhost:5433/taskflow
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+JWT_SECRET=replace_with_a_local_secret
+JWT_REFRESH_SECRET=replace_with_a_different_local_secret
+EMAIL_PROVIDER=console
+```
+
+Do not commit real secrets. The development password shown below is for local seeded data only.
+
+### 3. Start PostgreSQL and Redis
+
+```bash
+docker compose up -d postgres redis
+```
+
+### 4. Apply migrations, generate Prisma Client, and seed data
+
+```bash
+npx prisma migrate deploy
+npx prisma generate
+npx prisma db seed
+```
+
+For active schema development, use `npm run prisma:migrate` instead of `prisma migrate deploy`.
+
+### 5. Start the API
+
+```bash
+npm run dev
+```
+
+The API is available at `http://localhost:3000`.
+
+### 6. Start the frontend
+
+Run these commands from `taskflow-frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+The frontend is available at `http://localhost:3001` unless Next.js selects another port.
+
+## Docker Compose
+
+The complete backend stack is available with:
+
+```bash
+docker compose up --build
+```
+
+| Service | Purpose | Local address |
+| --- | --- | --- |
+| `api` | Express HTTP API | `http://localhost:3000` |
+| `worker` | BullMQ email processor | No public port |
+| `postgres` | Application database | `localhost:5433` |
+| `redis` | Queue backend | `localhost:6379` |
+
+The API and worker wait for PostgreSQL and Redis health checks before starting. Containers use `postgres:5432` and `redis:6379`; host-side commands use `localhost:5433` and `localhost:6379`.
+
+## Database
+
+Prisma manages the PostgreSQL schema. The main tables are:
+
+| Domain | Tables |
+| --- | --- |
+| Identity and tenancy | `users`, `organizations`, `org_members`, `refresh_tokens` |
+| Work management | `projects`, `tasks`, `task_assignments`, `comments` |
+
+The schema also defines PostgreSQL enums for task status, task priority, and organization membership roles.
+
+Seed data includes 2 organizations, 5 users, 5 memberships, 4 projects, 12 tasks, assignments, and comments.
+
+```bash
+npx prisma migrate status
+npx prisma studio
+```
+
+Prisma Studio runs at `http://localhost:5555`.
+
+### Development Credentials
+
+Seeded users use:
 
 ```text
 Password: TaskFlowDemo123!
 ```
 
-Passwords are hashed with bcrypt using cost factor `12`.
+Passwords are stored as bcrypt hashes with a cost factor of 12 or higher.
 
----
+## API Overview
 
-# Task 02 — Authentication & Authorization
-
-## Endpoints
+All protected endpoints require:
 
 ```http
-POST /auth/register
-POST /auth/login
-POST /auth/refresh
-POST /auth/logout
+Authorization: Bearer <access_token>
 ```
 
-## Authentication
+### Authentication
 
-- JWT access tokens
-- 15-minute access-token TTL
-- Organization ID and role included in access-token claims
-- Organization context derived from authenticated state
-- `ORG_ADMIN` and `MEMBER` roles
-- IP-based authentication rate limiting
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/auth/register` | Create a user, organization, membership, and tokens |
+| `POST` | `/auth/login` | Authenticate with email and password |
+| `POST` | `/auth/refresh` | Rotate a refresh token and issue a new access token |
+| `POST` | `/auth/logout` | Revoke a refresh token |
 
-## Password Security
+Access tokens expire after 15 minutes by default. Refresh tokens are persisted as SHA-256 hashes, expire after 7 days by default, and cannot be replayed after rotation or revocation. Authentication endpoints are limited to 10 requests per minute per IP.
 
-- bcrypt password hashing
-- bcrypt cost factor >= 12
-- Plaintext passwords are never stored
+### Projects and Tasks
 
-## Refresh Tokens
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/projects` | Create a project |
+| `GET` | `/projects` | List organization projects |
+| `GET` | `/projects/:id` | Get a project |
+| `PATCH` | `/projects/:id` | Update a project |
+| `DELETE` | `/projects/:id` | Delete a project |
+| `GET` | `/projects/:id/dashboard` | Get task counts by status |
+| `POST` | `/tasks` | Create a task |
+| `GET` | `/tasks` | List organization tasks |
+| `GET` | `/tasks/:id` | Get a task |
+| `PATCH` | `/tasks/:id` | Update a task |
+| `DELETE` | `/tasks/:id` | Delete a task |
+| `POST` | `/tasks/:id/assign` | Assign a task to an organization member |
+| `DELETE` | `/tasks/:id/assign/:userId` | Remove a task assignment |
 
-- 7-day TTL
-- Persisted in PostgreSQL
-- Stored as SHA-256 hashes
-- Rotation on refresh
-- Revocation support
-- Replay/reuse rejection
-- Logout revokes the supplied refresh token
-
-## Registration
-
-Registration creates:
-
-1. A user
-2. A new organization
-3. An `ORG_ADMIN` membership
-4. An access token
-5. A refresh token
-
-The client does not supply the organization ID or initial role.
-
----
-
-# Task 03 — REST API: Projects & Tasks
-
-## Project Endpoints
-
-| Method     | Endpoint                    | Purpose           |
-| ---------- | --------------------------- | ----------------- |
-| `POST`   | `/projects`               | Create project    |
-| `GET`    | `/projects`               | List projects     |
-| `GET`    | `/projects/:id`           | Get project       |
-| `PATCH`  | `/projects/:id`           | Update project    |
-| `DELETE` | `/projects/:id`           | Delete project    |
-| `GET`    | `/projects/:id/dashboard` | Project dashboard |
-
-## Task Endpoints
-
-| Method     | Endpoint       | Purpose           |
-| ---------- | -------------- | ----------------- |
-| `POST`   | `/tasks`     | Create task       |
-| `GET`    | `/tasks`     | List/filter tasks |
-| `GET`    | `/tasks/:id` | Get task          |
-| `PATCH`  | `/tasks/:id` | Update task       |
-| `DELETE` | `/tasks/:id` | Delete task       |
-
-## Assignment Endpoints
-
-| Method     | Endpoint                      | Purpose       |
-| ---------- | ----------------------------- | ------------- |
-| `POST`   | `/tasks/:id/assign`         | Assign user   |
-| `DELETE` | `/tasks/:id/assign/:userId` | Unassign user |
-
-## Task Filters
+Task listing supports `status`, `priority`, `assignee`, `dueFrom`, `dueTo`, and `projectId` filters, plus offset pagination:
 
 ```text
-status
-priority
-assignee
-dueFrom
-dueTo
-projectId
-```
-
-## Pagination
-
-```http
 GET /tasks?page=1&limit=20
 ```
 
-Example response:
+Paginated responses have this shape:
 
 ```json
 {
@@ -220,625 +242,116 @@ Example response:
 }
 ```
 
-## Multi-Tenant Authorization
+Validation uses Zod. Errors use a consistent shape:
 
-- Organization scope is derived from the authenticated JWT.
-- Client-supplied organization IDs are not trusted for authorization.
-- Cross-tenant project access returns `403 Forbidden`.
-- Cross-tenant task access returns `403 Forbidden`.
-- Cross-tenant resource data is not exposed.
-
-## Project Dashboard
-
-Task counts are grouped by:
-
-```text
-TODO
-IN_PROGRESS
-REVIEW
-DONE
+```json
+{
+  "error": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "details": {}
+}
 ```
 
----
+### Job Status and API Documentation
 
-# Task 04 — Background Jobs & Email Notifications
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/jobs/:id` | Get an organization-scoped job status |
+| `GET` | `/health` | Check API and Redis health |
+| `GET` | `/api-docs` | Open Swagger UI |
+| `GET` | `/api-docs/openapi.json` | Download the OpenAPI document |
 
-## Assignment Notification Flow
+Swagger UI is available at `http://localhost:3000/api-docs`.
+
+## Background Jobs
+
+Task assignment persists the database record before attempting to enqueue an email job:
 
 ```text
 POST /tasks/:id/assign
-        │
-        ├── Persist assignment in PostgreSQL
-        │
-        └── Enqueue task_assigned job
-                    │
-                    ▼
-                Redis/BullMQ
-                    │
-                    ▼
-                  Worker
-                    │
-                    ▼
-             Email Provider
+        |
+        v
+Insert task_assignments in PostgreSQL
+        |
+        v
+Add task_assigned job to Redis/BullMQ
+        |
+        v
+Return 201 with assignment and optional jobId
+        |
+        v
+Worker -> email.processor.ts -> email provider
 ```
 
-## Queue & Worker
+### Queue Topology
 
-- Redis-backed BullMQ queue
-- Dedicated Worker process
-- Asynchronous email processing
-- Console email provider for local development
+| Queue | Purpose |
+| --- | --- |
+| `taskflow-email` | Main assignment-notification queue |
+| `taskflow-email-dlq` | Explicit dead-letter queue for exhausted jobs |
 
-Default local provider:
+Jobs have 3 attempts with exponential backoff: 1 second, 2 seconds, then 4 seconds. Failed jobs remain queryable in the main queue. After the final failure, the worker copies the original job ID, payload, attempt count, and failure reason to the DLQ. DLQ entries are not retried automatically.
 
-```env
-EMAIL_PROVIDER=console
-```
+Every job payload includes `organizationId`, which is derived from the authenticated request. Job status requests compare that value with the caller's organization before returning metadata; cross-tenant probes return `403 Forbidden`.
 
-The console provider logs the notification instead of sending real email.
+If database persistence succeeds but queue enqueueing fails, the assignment remains and the API returns `201` without a `jobId`. The enqueue failure is logged at warning level. This persist-first strategy avoids phantom assignments while accepting that a notification may be missed during a temporary Redis outage.
 
-## Retry Policy
+## Testing
 
-```text
-3 total attempts
-1st retry → 1 second
-2nd retry → 2 seconds
-3rd retry → 4 seconds
-```
+Tests use a separate database and must never target the development database.
 
-## Dead-Letter Queue
-
-Exhausted email jobs are forwarded to:
-
-```text
-taskflow-email-dlq
-```
-
-The original failed job remains queryable.
-
-## Job Status
-
-```http
-GET /jobs/:id
-```
-
-Supported statuses:
-
-```text
-pending
-active
-completed
-failed
-```
-
-Job status is organization-scoped. Cross-tenant job access returns `403 Forbidden`.
-
----
-
-# Task 05 — Testing & API Documentation
-
-## Unit Tests
-
-Coverage includes:
-
-- Authentication logic
-- Assignment validation
-- Pagination
-
-## Integration Tests
-
-Coverage includes:
-
-- Registration
-- Login
-- Refresh validation
-- Duplicate email handling
-- Task CRUD
-- Task validation
-- Cross-tenant access → `403`
-- Authentication/error scenarios
-
-## Isolated Test Database
-
-Integration tests use a dedicated PostgreSQL database:
-
-```text
-taskflow_test
-```
-
-The test database is isolated from the normal development database.
-
-## Test Commands
-
-### Full test suite
-
-```bash
-npm test
-```
-
-### Unit tests
-
-```bash
-npm run test:unit
-```
-
-### Integration tests
-
-```powershell
-$env:DATABASE_URL="postgresql://taskflow:change_me@localhost:5433/taskflow_test"
-npm run test:integration
-Remove-Item Env:DATABASE_URL
-```
-
-## Typecheck
-
-```bash
-npx tsc --noEmit
-```
-
-## Production Build
-
-```bash
-npm run build
-```
-
----
-
-# API Documentation
-
-## Public Swagger UI
-
-https://taskflow-backend-api-7iwy.onrender.com/api-docs
-
-## Public OpenAPI JSON
-
-https://taskflow-backend-api-7iwy.onrender.com/api-docs/openapi.json
-
-The OpenAPI documentation covers:
-
-- Authentication
-- Projects
-- Tasks
-- Assignments
-- Background jobs
-- Request schemas
-- Response schemas
-- Common error responses
-
-For local development:
-
-```text
-http://localhost:3000/api-docs
-http://localhost:3000/api-docs/openapi.json
-```
-
----
-
-# Postman Collection
-
-The repository includes:
-
-```text
-postman/TaskFlow.postman_collection.json
-```
-
-The collection covers:
-
-### Health
-
-- Health check
-
-### Auth
-
-- Register
-- Login
-- Refresh
-- Logout
-
-### Projects
-
-- Create
-- List
-- Get
-- Update
-- Dashboard
-- Delete
-
-### Tasks
-
-- Create
-- List
-- Get
-- Update
-- Filter
-- Assign
-- Unassign
-- Delete
-
-### Jobs
-
-- Get job status
-
-Collection variables:
-
-```text
-baseUrl
-accessToken
-refreshToken
-projectId
-taskId
-userId
-jobId
-```
-
----
-
-# Local Development
-
-## Prerequisites
-
-- Node.js 22+
-- Docker Desktop
-
-## 1. Install dependencies
-
-```bash
-npm install
-```
-
-## 2. Configure environment
-
-Copy:
-
-```text
-.env.example
-```
-
-to:
-
-```text
-.env
-```
-
-Populate local secrets and configuration.
-
-> Never commit `.env` or other local secret files.
-
-## 3. Generate Prisma Client
-
-```bash
-npx prisma generate
-```
-
-## 4. Start PostgreSQL and Redis
+### One-time test database setup
 
 ```bash
 docker compose up -d postgres redis
+docker compose exec postgres psql -U taskflow -d taskflow -c "CREATE DATABASE taskflow_test;"
 ```
 
-## 5. Check database migrations
+Create `.env.test` from `.env.test.example`, then run:
 
 ```bash
-npx prisma migrate status
-```
-
-## 6. Seed development data
-
-```bash
-npx prisma db seed
-```
-
-> The seed resets and recreates seeded application data. Do not run it when you need to preserve manually-created development records.
-
-## 7. Start the API
-
-```bash
-npm run dev
-```
-
-API:
-
-```text
-http://localhost:3000
-```
-
-Health check:
-
-```text
-http://localhost:3000/health
-```
-
-## 8. Start the Worker
-
-In a second terminal:
-
-```bash
-npm run worker:dev
-```
-
-## 9. Prisma Studio
-
-Optional:
-
-```bash
-npx prisma studio
-```
-
-Studio:
-
-```text
-http://localhost:5555
-```
-
----
-
-# Environment & Secrets
-
-## Local `.env`
-
-`.env` contains local development secrets and is intentionally ignored by Git.
-
-Important values include:
-
-```env
-JWT_SECRET=<64-byte-random-hex>
-JWT_REFRESH_SECRET=<64-byte-random-hex>
-POSTGRES_PASSWORD=change_me
-```
-
-## `.env.example`
-
-The repository contains a safe template:
-
-```text
-.env.example
-```
-
-It contains placeholders only.
-
-## Host vs Docker Database URL
-
-When running Prisma or the API directly from Windows:
-
-```text
-postgresql://taskflow:change_me@localhost:5433/taskflow
-```
-
-When the API/Worker run inside Docker:
-
-```text
-postgresql://taskflow:change_me@postgres:5432/taskflow
-```
-
-Inside Docker, `postgres` is the Compose service name.
-
----
-
-# Docker Compose
-
-## Services
-
-```text
-api
-worker
-postgres
-redis
-```
-
-## Validate Compose configuration
-
-```bash
-docker compose config
-```
-
-## Start the complete stack
-
-```bash
-docker compose up -d --build
-```
-
-## Stop the stack
-
-```bash
-docker compose down
-```
-
-## Local Ports
-
-| Service    |     Port |
-| ---------- | -------: |
-| API        | `3000` |
-| PostgreSQL | `5433` |
-| Redis      | `6379` |
-
-The API and Worker wait for healthy PostgreSQL and Redis services before starting.
-
----
-
-# Deployment
-
-## Public API
-
-The API is deployed as a Render Web Service:
-
-**https://taskflow-backend-api-7iwy.onrender.com**
-
-Health check:
-
-**https://taskflow-backend-api-7iwy.onrender.com/health**
-
-## Public API Documentation
-
-Swagger UI:
-
-**https://taskflow-backend-api-7iwy.onrender.com/api-docs**
-
-OpenAPI JSON:
-
-**https://taskflow-backend-api-7iwy.onrender.com/api-docs/openapi.json**
-
-## Render Infrastructure
-
-The current public deployment uses:
-
-```text
-Render Web Service
-Render PostgreSQL
-Render Key Value (Valkey / Redis-compatible)
-```
-
-The API, PostgreSQL, and Key Value services are deployed in the same Render region and communicate through the Render private network.
-
-## Worker Deployment
-
-The BullMQ Worker is implemented as a separate process and is included in the repository and Docker Compose configuration.
-
-The Worker is **not deployed as a Render Background Worker** for this assignment because that service requires a paid instance.
-
-The complete Worker architecture is reproducible locally with Docker Compose:
-
-```text
-API
-  |
-  v
-Redis / BullMQ
-  |
-  v
-Worker
-  |
-  v
-Email Provider
-```
-
-Run the complete local stack with:
-
-```bash
-docker compose up -d --build
-```
-
-Or run the Worker directly during development:
-
-```bash
-npm run worker:dev
-```
-
-Task 04 queue processing, retries, dead-letter queue behavior, job status, and cross-tenant job protection were verified locally with the API and Worker running against PostgreSQL and Redis.
-
-## Deployment Scope
-
-The public Render deployment is intended for API access and demonstration.
-
-The repository remains the source of truth for the complete application architecture, including:
-
-- API
-- Worker
-- PostgreSQL
-- Redis / BullMQ
-- Authentication
-- Projects and Tasks
-- Background jobs
-- Testing
-- Swagger/OpenAPI
-- Postman collection
-
----
-
-# Repository Structure
-
-```text
-taskflow-backend/
-├── src/
-│   ├── auth/
-│   ├── config/
-│   ├── docs/
-│   ├── jobs/
-│   ├── middleware/
-│   ├── projects/
-│   ├── routes/
-│   └── tasks/
-├── worker/
-├── prisma/
-├── tests/
-│   ├── unit/
-│   └── integration/
-├── postman/
-│   └── TaskFlow.postman_collection.json
-├── Dockerfile
-├── docker-compose.yml
-├── prisma.config.ts
-├── package.json
-├── package-lock.json
-├── tsconfig.json
-├── vitest.config.ts
-├── .env.example
-├── .gitignore
-└── README.md
-```
-
----
-
-# Development Credentials
-
-Seeded development users use:
-
-```text
-Password: TaskFlowDemo123!
-```
-
-Examples:
-
-```text
-ava.shah@northstar.example
-liam.chen@northstar.example
-maya.rao@northstar.example
-noah.kim@blueorbit.example
-sara.ali@blueorbit.example
-```
-
-These credentials are for local development/testing only.
-
----
-
-# Final Verification
-
-Run:
-
-```bash
-npx prisma generate
-npx tsc --noEmit
+npm run test:migrate
 npm test
-npm run build
-docker compose config
 ```
 
-The repository should not contain:
+All test scripts load `.env.test` automatically through `dotenv-cli`:
+
+```bash
+npm run test:unit
+npm run test:integration
+npm run test:watch
+npm run test:coverage
+```
+
+Integration tests exercise the HTTP app against the isolated database and reset data between tests. CI runs the same suite against fresh PostgreSQL and Redis service containers.
+
+## Useful Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run build` | Compile the backend |
+| `npm run typecheck` | Run TypeScript checks without emitting files |
+| `npm run lint` | Run ESLint |
+| `npm run dev` | Start the API with file watching |
+| `npm run worker:dev` | Start the worker with file watching |
+| `npm run worker` | Start the compiled worker |
+| `npx prisma studio` | Open the database browser |
+
+## Security and Tenant Assumptions
+
+- Registration creates a new organization and assigns the registering user the `ORG_ADMIN` role.
+- Supported roles are `ORG_ADMIN` and `MEMBER`.
+- Authenticated context contains `userId`, `orgId`, and `role`.
+- Project, task, assignment, and job queries are scoped by the authenticated organization.
+- Client-supplied organization IDs are not used as the authorization source.
+- Refresh tokens are hashed and rotated; revoked tokens cannot be reused.
+- Logout revokes the refresh token. Existing access tokens remain valid until their short TTL expires.
+- A user can currently authenticate against a selected membership. Explicit organization switching is outside the current API scope.
+
+## API Collections
+
+The Postman collection is available at:
 
 ```text
-.env
-.env.test
-node_modules/
-dist/
-coverage/
+taskflow-backend/postman/TaskFlow.postman_collection.json
 ```
-
-Only the safe environment template should be committed:
-
-```text
-.env.example
-```
-
----
-
-# Git
-
-Primary branch:
-
-```text
-main
-```
-
-Repository:
-
-https://github.com/maxsilver9890/taskflow-backend
-
-The repository contains the completed TaskFlow backend implementation, automated tests, OpenAPI documentation, Postman collection, Docker configuration, and reproducible Worker architecture.
